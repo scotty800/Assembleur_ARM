@@ -127,7 +127,7 @@ check_space:
     b next_char
 
 is_space:
-    add r2, r2, #1
+    add r3, r3, #1
 
 next_char:
     add r6, r6, #1
@@ -135,3 +135,121 @@ next_char:
 
 end_analyze:
     pop {r4-r7, pc}
+
+most_frequent_letter:
+    push {r4-r8, lr}
+
+    mov r4, r0      @ adresse de la chaîne
+    mov r5, r1      @ longueur de la chaîne
+    ldr r6, =frq_letters
+
+    @ reset tableau freq
+    mov r7, #0
+
+reset_loop:
+    cmp r7, #26
+    beq start_count
+    mov r8, #0
+    str r8, [r6, r7, LSL #2]
+    add r7, r7, #1
+    b reset_loop
+
+start_count:
+    mov r7, #0
+
+count_loop:
+    cmp r7, r5
+    beq find_max
+
+    ldrb r8, [r4, r7]  @ charger le caractère courant
+
+    @ convertir en minuscule si majuscule
+    cmp r8, #'A'
+    blt skip_count
+    cmp r8, #'Z'
+    bgt check_lower
+    add r8, r8, #32    @ convertir en minuscule
+    b process_letter
+
+check_lower:
+    cmp r8, #'a'
+    blt skip_count
+    cmp r8, #'z'
+    bgt skip_count
+
+process_letter:
+    sub r8, r8, #'a'   @ index de la lettre
+    ldr r9, [r6, r8, LSL #2]
+    add r0, r0, #1
+    str r0, [r6, r8, LSL #2]
+
+skip_count:
+    add r7, r7, #1
+    b count_loop
+
+find_max:
+    mov r7, #0      @ index
+    mov r0, #0      @ max count
+    mov r1, #0      @ lettre la plus fréquente
+
+find_loop:
+    cmp r7, #26
+    beq freq_end
+
+    ldr r2, [r6, r7, LSL #2]
+    cmp r2, r0
+    ble skip_max
+    mov r0, r2
+    add r1, r7
+
+skip_max:
+    add r7, r7, #1
+    b find_loop
+
+freq_end:
+    cmp r0, #0
+    beq no_letter
+
+    add r0, r1, #'a'
+    pop {r4-r8, pc}
+
+no_letter:
+    mov r0, #0
+    pop {r4-r8, pc}
+
+@ ------- print_string -------
+print_string:
+    push {lr}
+    mov r1, #0
+
+len_loop:
+    ldrb r2, [r0, r1]
+    cmp r2, #0
+    add r1, r1, #1
+    bne len_loop
+    sub r1, r1, #1
+
+    mov r7, #4         @ syscall write
+    mov r2, r1         @ longueur
+    mov r1, r0         @ buffer
+    mov r0, #1         @ file descriptor 1 (stdout)
+    svc #0
+    pop {lr}
+
+@ ------- print_char -------
+print_char:
+    push {lr}
+    sub sp, sp, #4
+    strb r0, [sp]
+    mov r0, #1         @ file descriptor 1 (stdout)
+    mov r1, sp         @ buffer
+    mov r2, #1         @ longueur
+    mov r7, #4         @ syscall write
+    svc #0
+    add sp, sp, #4
+    pop {pc}
+
+@ ------- print_number -------
+print_number:
+    add r0, r0, #0
+    b print_char
