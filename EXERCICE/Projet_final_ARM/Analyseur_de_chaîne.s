@@ -99,8 +99,7 @@ loop_analyze:
     cmp r7, #'a'
     blt check_upper
     cmp r7, #'z'
-    bgt is_letter
-    b check_upper
+    bgt check_upper
     add r0, r0, #1
     b next_char
 
@@ -180,8 +179,8 @@ check_lower:
 process_letter:
     sub r8, r8, #'a'   @ index de la lettre
     ldr r9, [r6, r8, LSL #2]
-    add r0, r0, #1
-    str r0, [r6, r8, LSL #2]
+    add r9, r9, #1
+    str r9, [r6, r8, LSL #2]
 
 skip_count:
     add r7, r7, #1
